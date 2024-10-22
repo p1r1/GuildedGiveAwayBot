@@ -238,7 +238,6 @@ namespace GameGiveawayBot {
     public partial class Form1 : Form {
         private System.Windows.Forms.Timer dailyTimer;
         private string apiUrl = "https://www.gamerpower.com/api/filter?type=game&sort-by=date";
-        private string discordWebhookUrl2 = "https://media.guilded.gg/webhooks/84fcce50-845a-43c3-b0ac-9ab99be5647c/x4z1By05heo0YKI8s64OcUqGkuaAcyWOgSO4oqqWQ8eQGuo4oggSamgES06Em6CceYgesaa60SWSsUoUsukIsC";
         private string discordWebhookUrl = "https://media.guilded.gg/webhooks/e31e10c1-1fe7-487d-9b6d-14bf3c55943d/imSelWpA3YKEGCumoEqsywMUC0Scyys0WKGKEQ8OceqeumYOeOG8aWW2i6kYeAG0mECYeWUEwaIOCEGCikIYYk";
         private string sentGiveawaysFile = "sent_giveaways.txt";
 
