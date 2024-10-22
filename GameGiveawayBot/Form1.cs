@@ -1,234 +1,3 @@
-#region async
-//using System.Globalization;
-//using System.Text;
-//using Newtonsoft.Json;
-
-
-//namespace GameGiveawayBot {
-//    public partial class Form1 : Form {
-//        private System.Windows.Forms.Timer dailyTimer;
-//        private string apiUrl = "https://www.gamerpower.com/api/filter?type=game&sort-by=date";
-//        private string discordWebhookUrl = "https://media.guilded.gg/webhooks/84fcce50-845a-43c3-b0ac-9ab99be5647c/x4z1By05heo0YKI8s64OcUqGkuaAcyWOgSO4oqqWQ8eQGuo4oggSamgES06Em6CceYgesaa60SWSsUoUsukIsC";
-//        private string sentGiveawaysFile = "sent_giveaways.txt";
-
-//        public Form1() {
-//            InitializeComponent();
-
-//            // Set up the form as hidden
-//            //this.WindowState = FormWindowState.Minimized;
-//            //this.ShowInTaskbar = false;
-
-//            // Set up system tray icon and daily timer
-//            SetupSystemTray();
-//            SetupDailyTimer();
-//        }
-
-//        // Initialize the system tray icon and context menu
-//        private void SetupSystemTray() {
-//            notifyIcon1.Visible = true;
-//            notifyIcon1.ContextMenuStrip = new ContextMenuStrip();
-
-//            // Add menu items to the tray icon context menu
-//            notifyIcon1.ContextMenuStrip.Items.Add("Send Giveaways Now", null, (s, e) => SendGiveawaysManually());
-//            notifyIcon1.ContextMenuStrip.Items.Add("Exit", null, (s, e) => Application.Exit());
-
-//            notifyIcon1.ShowBalloonTip(1000, "Game Giveaway Bot", "Bot is running in the system tray.", ToolTipIcon.Info);
-//        }
-
-//        // Setup a daily timer for 20:00
-//        private void SetupDailyTimer() {
-//            dailyTimer = new System.Windows.Forms.Timer();
-//            dailyTimer.Interval = (int)GetNextInterval();  // Cast to int since it needs milliseconds as int
-//            dailyTimer.Tick += async (sender, e) => {
-//                await SendGiveawaysAsync();
-//                dailyTimer.Interval = (int)GetNextInterval(); // Reset interval after sending giveaways
-//            };
-//            dailyTimer.Start();
-//        }
-
-//        // Calculate the interval for the next run at 20:00
-//        private double GetNextInterval() {
-//            var now = DateTime.Now;
-//            var nextRun = now.Date.AddHours(20);
-//            if (now > nextRun) nextRun = nextRun.AddDays(1);
-//            return (nextRun - now).TotalMilliseconds;
-//        }
-
-//        // Manually trigger the giveaway sending process
-//        private async void SendGiveawaysManually() {
-//            await SendGiveawaysAsync();
-//        }
-
-//        // MAIN Fetch giveaways from the API, filter out duplicates, and send to Discord
-//        private async Task SendGiveawaysAsync() {
-//            try {
-//                // delete the save file if file 3 months old
-//                await DeleteOldGiveAwaySaveFileAsync();
-//                using (var client = new HttpClient()) {
-//                    var response = await client.GetStringAsync(apiUrl);
-//                    var giveaways = JsonConvert.DeserializeObject<List<Giveaway>>(response);
-//                    if (giveaways == null) {
-//                        notifyIcon1.BalloonTipTitle = "API No Giveaway";
-//                        notifyIcon1.BalloonTipText = "API giveaway is null";
-//                        notifyIcon1.ShowBalloonTip(30000);
-//                        return;
-//                    }
-//                    var newGiveaways = FilterNewGiveaways(giveaways);
-
-//                    if (newGiveaways.Count > 0) {
-//                        foreach (var giveaway in newGiveaways) {
-//                            await SendToDiscordAsync(giveaway);
-//                            //SaveGiveawayId(giveaway.id);
-//                        }
-//                    }
-//                }
-//            }
-//            catch (Exception ex) {
-//                notifyIcon1.ShowBalloonTip(5000, "Error", "Failed to send giveaways: " + ex.Message, ToolTipIcon.Error);
-//            }
-//        }
-
-//        // Check if giveaway IDs are duplicates and filter them out
-//        private List<Giveaway> FilterNewGiveaways(List<Giveaway> giveaways) {
-//            var sentGiveawayIds = LoadSentGiveawayIds();
-//            var newGiveaways = new List<Giveaway>();
-
-//            foreach (var giveaway in giveaways) {
-//                if (giveaway.status == "Active" && !sentGiveawayIds.Contains(giveaway.id)) {
-//                    newGiveaways.Add(giveaway);
-//                }
-//            }
-
-//            return newGiveaways;
-//        }
-
-//        // Send giveaway details to the Discord channel
-//        private async Task SendToDiscordAsync(Giveaway giveaway) {
-//            //MessageBox.Show(giveaway.title);
-//            var msg = new {
-//                embeds = new[]
-//                {
-//                    new
-//                    {
-//                        title = giveaway.title,
-//                        color = 1127128,
-//                        url = giveaway.open_giveaway_url,
-//                        description = $"Worth = {giveaway.worth}       EndDate:{ConvertDateFormat(giveaway.end_date)}\n" +
-//                                    $"Platforms: {giveaway.platforms}\n" +
-//                                    $"[GamerPower]({giveaway.gamerpower_url})       **[Get it HERE.]({giveaway.open_giveaway_url})**",
-//                        image = new
-//                        {
-//                            url = giveaway.image
-//                        }
-//                    }
-//                }
-//            };
-
-//            var content = new StringContent(JsonConvert.SerializeObject(msg), Encoding.UTF8, "application/json");
-//            //string xx = await content.ReadAsStringAsync();
-//            //MessageBox.Show(xx);
-
-//            using (var client = new HttpClient()) {
-//                var response = await client.PostAsync(discordWebhookUrl, content);
-//                if (!response.IsSuccessStatusCode) {
-//                    throw new Exception("Failed to send giveaway to Discord");
-//                }
-//                else {
-//                    SaveGiveawayId(giveaway.id);
-//                }
-//            }
-//        }
-
-//        // Load the list of already sent giveaway IDs from a file
-//        private HashSet<int> LoadSentGiveawayIds() {
-//            var sentGiveaways = new HashSet<int>();
-
-//            if (File.Exists(sentGiveawaysFile)) {
-//                var lines = File.ReadAllLines(sentGiveawaysFile);
-//                foreach (var line in lines) {
-//                    if (int.TryParse(line, out var id)) {
-//                        sentGiveaways.Add(id);
-//                    }
-//                }
-//            }
-
-//            return sentGiveaways;
-//        }
-
-//        // Save a giveaway ID to prevent duplicates
-//        private void SaveGiveawayId(int id) {
-//            if (!File.Exists(sentGiveawaysFile)) {
-//                File.Create(sentGiveawaysFile);
-//            }
-//            using (var writer = File.AppendText(sentGiveawaysFile)) {
-//                writer.WriteLine(id);
-//            }
-//        }
-
-//        public static string ConvertDateFormat(string dateStr) {
-//            // Parse the original date string
-//            DateTime dateTime = DateTime.ParseExact(dateStr, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-
-//            // Format the date to the desired output format
-//            return dateTime.ToString("dd.MM.yyyy HH:mm");
-//        }
-
-//        public static async Task DeleteOldGiveAwaySaveFileAsync(string filePath = "sent_giveaways.txt") {
-//            try {
-//                // Get the current directory (where the executable is located)
-//                //string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
-
-//                // Construct the full file path
-//                //string filePath = Path.Combine(directoryPath, fileName);
-
-//                // Check if the file exists
-//                if (!File.Exists(filePath)) {
-//                    Console.WriteLine($"File '{filePath}' does not exist.");
-//                    return;
-//                }
-
-//                // Get the current date
-//                DateTime currentDate = DateTime.Now;
-
-//                // Get the creation date of the file
-//                DateTime creationDate = File.GetCreationTime(filePath);
-
-//                // Check if the file is older than 3 months
-//                if (currentDate - creationDate > TimeSpan.FromDays(90)) {
-//                    // Delete the file asynchronously
-//                    await Task.Run(() => File.Delete(filePath));
-//                    Console.WriteLine($"Deleted: {filePath}");
-//                }
-//                else {
-//                    Console.WriteLine($"File '{filePath}' is not older than 3 months.");
-//                }
-
-//                Console.WriteLine("Process completed.");
-//            }
-//            catch (Exception ex) {
-//                Console.WriteLine($"An error occurred: {ex.Message}");
-//            }
-//        }
-
-//        private async void button1_Click(object sender, EventArgs e) {
-//            await SendGiveawaysAsync();
-//        }
-//    }
-
-//    public struct Giveaway {
-//        public int id { get; set; }
-//        public string  title { get; set; }
-//        public string status { get; set; }
-//        public string platforms { get; set; }
-//        public string image { get; set; }
-//        public string open_giveaway_url { get; set; }
-//        public string gamerpower_url { get; set; }
-//        public string worth { get; set; }
-//        public string end_date { get; set; }
-//    }
-//}
-
-#endregion
 using System.Globalization;
 using System.Text;
 using Newtonsoft.Json;
@@ -243,16 +12,16 @@ namespace GameGiveawayBot {
 
         public Form1() {
             InitializeComponent();
-            // minimize to system tray
-            this.ShowInTaskbar = false; // Ensure it doesn't show in the taskbar
-            this.WindowState = FormWindowState.Normal; // Start minimized
+        }
+        private void Form1_Load(object sender, EventArgs e) {
+            notifyIcon1.Visible = false; // notify icon logic
 
-            // Handle the form resize event to minimize to the tray
-            this.Resize += new EventHandler(Form1_Resize);
+            // Load filePath from config.json
+            if (!LoadConfig()) {
+                notifyIcon1.Visible = false;
+                Application.Exit();
+            }
 
-            if(!LoadConfig()) Application.Exit();
-
-            SetupSystemTray();
             SetupDailyTimer();
         }
 
@@ -281,13 +50,6 @@ namespace GameGiveawayBot {
             }
         }
 
-        private void SetupSystemTray() {
-            notifyIcon1.Visible = true;
-            notifyIcon1.ContextMenuStrip = new ContextMenuStrip();
-            notifyIcon1.ContextMenuStrip.Items.Add("Send Giveaways Now", null, (s, e) => SendGiveawaysManually());
-            notifyIcon1.ContextMenuStrip.Items.Add("Exit", null, (s, e) => Application.Exit());
-            notifyIcon1.ShowBalloonTip(1000, "Game Giveaway Bot", "Bot is running in the system tray.", ToolTipIcon.Info);
-        }
 
         private void SetupDailyTimer() {
             dailyTimer = new System.Windows.Forms.Timer();
@@ -439,27 +201,29 @@ namespace GameGiveawayBot {
             SendGiveaways();
         }
 
-        private void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e) {
-            // Restore the form if it is minimized or hidden
-            this.WindowState = FormWindowState.Minimized;
-            this.Show();
-            this.WindowState = FormWindowState.Normal;
+        #region notifyIcon
+        //add this to form load -> notifyIcon1.Visible = false; // notify icon logic
+        private void Form1_Resize(object sender, EventArgs e) {
+            if (this.WindowState == FormWindowState.Minimized) {
+                Hide();
+                notifyIcon1.Visible = true;
+            }
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e) {
-            // Minimize the form instead of closing
-            e.Cancel = true; // Cancel the close event
-            this.Hide(); // Hide the form
-            this.ShowInTaskbar = false; // Remove it from the taskbar
+            notifyIcon1.Visible = false;
+            Application.Exit();
         }
 
-        private void Form1_Resize(object sender, EventArgs e) {
-            // If the form is minimized, hide it from the taskbar and move to the system tray
-            if (this.WindowState == FormWindowState.Minimized) {
-                this.Hide(); // Hide the form
-                this.ShowInTaskbar = false; // Remove it from the taskbar
-            }
+        private void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e) {
+            Show();
+            this.WindowState = FormWindowState.Normal;
+            notifyIcon1.Visible = false;
         }
+
+        #endregion
+
+
     }
 
     public struct Giveaway {
