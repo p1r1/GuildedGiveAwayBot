@@ -237,14 +237,48 @@ using Newtonsoft.Json;
 namespace GameGiveawayBot {
     public partial class Form1 : Form {
         private System.Windows.Forms.Timer dailyTimer;
-        private string apiUrl = "https://www.gamerpower.com/api/filter?type=game&sort-by=date";
-        private string discordWebhookUrl = "https://media.guilded.gg/webhooks/e31e10c1-1fe7-487d-9b6d-14bf3c55943d/imSelWpA3YKEGCumoEqsywMUC0Scyys0WKGKEQ8OceqeumYOeOG8aWW2i6kYeAG0mECYeWUEwaIOCEGCikIYYk";
+        private string apiUrl;
+        private string discordWebhookUrl;
         private string sentGiveawaysFile = "sent_giveaways.txt";
 
         public Form1() {
             InitializeComponent();
+            // minimize to system tray
+            this.ShowInTaskbar = false; // Ensure it doesn't show in the taskbar
+            this.WindowState = FormWindowState.Normal; // Start minimized
+
+            // Handle the form resize event to minimize to the tray
+            this.Resize += new EventHandler(Form1_Resize);
+
+            if(!LoadConfig()) Application.Exit();
+
             SetupSystemTray();
             SetupDailyTimer();
+        }
+
+        // Method to load configuration from config.json
+        private bool LoadConfig() {
+            try {
+                string configFilePath = "config.json"; // Path to the config.json file
+                if (File.Exists(configFilePath)) {
+                    string json = File.ReadAllText(configFilePath);
+                    dynamic config = JsonConvert.DeserializeObject(json);
+                    apiUrl = config.apiUrl;
+                    discordWebhookUrl = config.discordWebhookUrl;
+
+                    richTextBox1.Text = richTextBox1.Text + "apiurl : " + apiUrl + "\n\n";
+                    richTextBox1.Text = richTextBox1.Text + "discordWebhookUrl : " + discordWebhookUrl + "\n";
+                    return true;
+                }
+                else {
+                    MessageBox.Show("Configuration file not found.");
+                    return false;
+                }
+            }
+            catch (Exception ex) {
+                MessageBox.Show("Error loading configuration: " + ex.Message);
+                return false;
+            }
         }
 
         private void SetupSystemTray() {
@@ -291,7 +325,7 @@ namespace GameGiveawayBot {
                         notifyIcon1.ShowBalloonTip(30000);
                         return;
                     }
-                    richTextBox1.Text = richTextBox1.Text + $"giveaway count : {giveaways.Count}";
+                    richTextBox1.Text = richTextBox1.Text + $"giveaway count : {giveaways.Count}\n";
                     var newGiveaways = FilterNewGiveaways(giveaways);
 
                     if (newGiveaways.Count > 0) {
@@ -403,6 +437,28 @@ namespace GameGiveawayBot {
 
         private void button1_Click(object sender, EventArgs e) {
             SendGiveaways();
+        }
+
+        private void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e) {
+            // Restore the form if it is minimized or hidden
+            this.WindowState = FormWindowState.Minimized;
+            this.Show();
+            this.WindowState = FormWindowState.Normal;
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e) {
+            // Minimize the form instead of closing
+            e.Cancel = true; // Cancel the close event
+            this.Hide(); // Hide the form
+            this.ShowInTaskbar = false; // Remove it from the taskbar
+        }
+
+        private void Form1_Resize(object sender, EventArgs e) {
+            // If the form is minimized, hide it from the taskbar and move to the system tray
+            if (this.WindowState == FormWindowState.Minimized) {
+                this.Hide(); // Hide the form
+                this.ShowInTaskbar = false; // Remove it from the taskbar
+            }
         }
     }
 

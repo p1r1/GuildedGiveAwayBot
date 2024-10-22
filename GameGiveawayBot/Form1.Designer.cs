@@ -39,14 +39,15 @@
             notifyIcon1.Icon = (Icon)resources.GetObject("notifyIcon1.Icon");
             notifyIcon1.Text = "notifyIcon1";
             notifyIcon1.Visible = true;
+            notifyIcon1.MouseDoubleClick += notifyIcon1_MouseDoubleClick;
             // 
             // button1
             // 
             button1.Location = new Point(12, 12);
             button1.Name = "button1";
-            button1.Size = new Size(75, 23);
+            button1.Size = new Size(92, 23);
             button1.TabIndex = 0;
-            button1.Text = "button1";
+            button1.Text = "Do The Thing";
             button1.UseVisualStyleBackColor = true;
             button1.Click += button1_Click;
             // 
@@ -67,6 +68,7 @@
             Controls.Add(button1);
             Name = "Form1";
             Text = "Form1";
+            FormClosing += Form1_FormClosing;
             ResumeLayout(false);
         }
 

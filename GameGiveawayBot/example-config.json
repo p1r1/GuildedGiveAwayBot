@@ -1,0 +1,4 @@
+{
+  "apiUrl": "https://www.gamerpower.com/api/filter?type=game&sort-by=date",
+  "discordWebhookUrl": "your-guilded-wehook-url"
+}
